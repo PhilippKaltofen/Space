@@ -11,6 +11,9 @@ var particles_rocket_main;
 var particles_rocket_left;
 var particles_rocket_right;
 
+var blackHole;
+var earth;
+
 // SETUP FUNCTION
 
 var setup = function(){
@@ -27,15 +30,19 @@ var setup = function(){
     backgroundLayer_1 = [];
     backgroundLayer_2 = [];
 
-    for(var i = 0; i < 30; i++){
-        backgroundLayer_1[i] = new backgroundDetail(random(0, width), random(0, height));
-        backgroundLayer_2[i] = new backgroundDetail(random(0, width), random(0, height));
+    for(var i = 0; i < 300; i++){
+        backgroundLayer_1[i] = new backgroundDetail(random(-width, width * 2), random(-height, height * 2), i);
+        backgroundLayer_2[i] = new backgroundDetail(random(-width, width), random(-height, height), i);
     }
 
     particles_rocket_main = [];
     for(var i = 0; i < 50; i++){
-        particles_rocket_main[i] = new particle(player, player.position.x, player.position.y, 200, 200, 0, random(-1,1), 1, random(5, 10), random(3,10), random(1,3));
+        // parent, posX, posY, r, g, b, dirX, dirY, decaySpeed, size, speed
+        particles_rocket_main[i] = new particle(player, player.position.x, player.position.y, 200, 200, 0, random(-1,1), 1, random(5, 8), random(8,10), 3);
     }
+
+    blackHole = new blackHole(width / 2, height + 200);
+    earth = new earth(width / 2, height - 160);
 }
 
 // DRAW
@@ -46,23 +53,33 @@ var draw = function(){
     // draw background
     // back layer
     for(var i = 0; i < backgroundLayer_2.length; i++){
+        push();
+        translate(player.position.x * (0.6 - i / backgroundLayer_2.length) - width / 2, player.position.y * (0.6 - i / backgroundLayer_2.length) - height / 2);
         backgroundLayer_2[i].drawDetail();
+        pop();
     }
+
     // front layer
     for(var i = 0; i < backgroundLayer_1.length; i++){
+        push();
+        //translate(player.position.x * (0.8 - i / backgroundLayer_1.length) - width / 2, player.position.y * (0.8 - i / backgroundLayer_1.length) - height / 2);
+        translate(player.position.x * 0.8 - width / 2, player.position.y * 0.8 - height / 2);
         backgroundLayer_1[i].drawDetail();
+        pop();
     }
+    push();
+    translate(player.position.x - width / 2, player.position.y - height / 2);
+    // draw black hole
+    blackHole.drawBlackHole();
 
     // draw planets
     for(var i = 0; i < planets.length; i++){
         planets[i].drawPlanet();
     }
 
-    // draw engine particles
-    // main engine
-    for(var i = 0; i < particles_rocket_main.length; i++){
-        particles_rocket_main[i].drawParticle();
-    }
+    // draw earth
+    earth.drawEarth();
+    pop();
 
     // draw player
     player.drawRocketShip();
@@ -132,14 +149,23 @@ var rocketShip = function(posX, posY){
     this.nearestPlanet = null;
     this.velocityX = 1;
     this.velocityY = 1;
-    this.force = 1;
+    this.force = 0;
     this.rotation = 0;
+    this.direction = createVector(0,0);
 
-    this.drawRocketShip = function(){
+    this.drawRocketShip = function(){        
+        noStroke();
+        // draw engine particles
+        // main engine
+        for(var i = 0; i < particles_rocket_main.length; i++){
+            particles_rocket_main[i].drawParticle(this.position);
+        }
+
         // draw rocketship
         push();
-        translate(this.position.x, this.position.y);
-        rotate(degrees(this.rotation));
+        // translate(this.position.x, this.position.y);
+        translate(width / 2, height / 2);
+        rotate(radians(this.rotation));
 
         // rocketship base
         fill(200,200,200);
@@ -191,39 +217,108 @@ var rocketShip = function(posX, posY){
         // this.force.add(1 * (this.nearestPlanet.position.x - this.position.x) / this.nearestPlanetDistance ^ 2, 1 * (this.nearestPlanet.position.y - this.position.y) / this.nearestPlanetDistance ^ 2);
 
         textAlign(LEFT);
-        text("Direction: " + this.position.heading(), width / 2, 20);
-        text("Magnitude: " + this.position.mag(), width / 2, 40);
+        fill(255);
+        text("Magnitude: " + this.position.mag(), 20, 40);
+        text("Rotation: " + this.rotation, 20, 60);       
+        text("Direction X: " + this.direction.x, 20, 80);
+        text("Direction Y: " + this.direction.y, 20, 100);
+        text("Velocity: " + this.force, 20, 120);
+        text("--------", 20, 140)
+        text("Planets: " + planets.length, 20, 160);
 
-        if(keyIsPressed){
-            this.force++;
+        // APPLY FORCE ON SHIP
+        // this.position.add(this.force * this.position.heading());
+
+        /*
+        if(this.rotation > 90 && this.rotation < 260){
+            this.position.y -= this.force;
+        } else {
+            this.position.y += this.force;
+        }
+        // left
+        if(this.rotation > 180){
+            this.position.x += this.force * 1;
+        } else
+        // right
+        if(this.rotation < 180 && this.rotation > 0){
+            this.position.x += this.force * -1;
+        }
+        */
+
+        
+        if(this.rotation > -90 && this.rotation < 0){
+            this.direction.x = this.rotation / 90;
+        } else if(this.rotation > -180 && this.rotation < -90){
+            this.direction.x = -(1 + (this.rotation / 90 + 1));
+        } else if(this.rotation > 0 && this.rotation < 90){
+            this.direction.x = this.rotation / 90;
+        } else if(this.rotation > 90 && this.rotation < 180){
+            this.direction.x = 1 - (this.rotation / 90 - 1);
         }
 
-        // this.position.add(0.1 * this.position.heading() * this.force);
-        // this.position.x += dx * (this.nearestPlanet.gravity / this.nearestPlanetDistance);
+        if(this.rotation > -90 && this.rotation < 0){
+            this.direction.y = 1 - (-this.rotation / 90);
+        } else if(this.rotation >= 0 && this.rotation < 90){
+            this.direction.y = 1 - (this.rotation / 90);
+        } else if(this.rotation >= 90 && this.rotation <= 180){
+            this.direction.y = 1 - this.rotation / 90;
+        } else if(this.rotation >= -180 && this.rotation <= -90){
+            this.direction.y = 1 + (this.rotation / 90);
+        }
+    
+        this.position.x -= this.direction.x * this.force;
+        this.position.y += this.direction.y * this.force;
+        
+        // this.position.x -= dx * (this.nearestPlanet.gravity / this.nearestPlanetDistance);
         // this.position.y += dy * (this.nearestPlanet.gravity / this.nearestPlanetDistance);
 
-        stroke(200);
-        line(this.position.x, this.position.y, this.nearestPlanet.position.x, this.nearestPlanet.position.y);
+        // stroke(200);
+        // line(width / 2, height / 2, this.nearestPlanet.position.x - this.position.x, this.nearestPlanet.position.y);
 
         // INPUT
 
         if(keyIsDown(87)){
-            // UP
+            if(this.force <= 100){
+                this.force += 0.1;
+            }
+            if(particles_rocket_main[0].moving == false){                
+                for(var i = 0; i < 50; i++){                
+                    particles_rocket_main[i].stopMoving = false;
+                }
+            }
         } else
         if(keyIsDown(83)){
-            // DOWN
+            this.force -= 0.1;
+        }
+
+        if(this.force > 1){
+            this.force -= 0.02;
         }
 
         if(keyIsDown(65)){
-            this.rotation -= 0.001;
+            this.rotation -= 2;
+            if(this.rotation < -180){
+                this.rotation = 180;
+            }
         } else
         if(keyIsDown(68)){
-            this.rotation += 0.001;
+            this.rotation += 2;
+            if(this.rotation > 180){
+                this.rotation = -180;
+            }
         }
     }
 }
 
-var backgroundDetail = function(posX, posY){
+var keyReleased = function(){
+    if(keyCode == 87){
+        for(var i = 0; i < 50; i++){
+            particles_rocket_main[i].stopMoving = true;
+        }
+    }
+}
+
+var backgroundDetail = function(posX, posY, index){
     this.position = createVector(posX, posY);
     this.r = 200;
     this.g = 200;
@@ -247,16 +342,21 @@ var particle = function(parent, posX, posY, r, g, b, dirX, dirY, decaySpeed, siz
     this.b = b;
     this.opacity;
     this.size = size;
+    this.fSize = size;
     this.direction = createVector(dirX, dirY);
-    this.moving = true;
+    this.stopMoving = true;
+    this.moving = false;
     this.fade = true;
     this.decaySpeed = decaySpeed;
     this.speed = speed;
 
-    this.drawParticle = function(){
+    this.drawParticle = function(parentPosition){
         // draw particle
+        push();
+        translate(this.position.x, this.position.y);
         fill(this.r, this.g, this.b, this.opacity);
-        ellipse(this.position.x, this.position.y, this.size, this.size);
+        ellipse(0, 0, this.size, this.size);
+        pop();
         // move particle
         if(this.moving){
             this.position.x += this.direction.x * this.speed;
@@ -266,6 +366,7 @@ var particle = function(parent, posX, posY, r, g, b, dirX, dirY, decaySpeed, siz
         if(this.fade){
             if(this.opacity > 0){
                 this.opacity -= decaySpeed;
+                this.size -= 0.2;
             } else {
                 this.resetParticle();
             }
@@ -273,9 +374,76 @@ var particle = function(parent, posX, posY, r, g, b, dirX, dirY, decaySpeed, siz
     }
 
     this.resetParticle = function(){
-        this.position.x = this.startPosition.x;
-        this.position.y = this.startPosition.y;
+        // this.startPosition.x = this.parent.position.x;
+        // this.startPosition.y = this.parent.position.y + 20;
+        // this.position.x = this.startPosition.x;
+        // this.position.y = this.startPosition.y;
+
+        this.position.x = width / 2;
+        this.position.y = height / 2;
+
+        this.direction.x = -this.parent.direction.x;
+        this.direction.y = this.parent.direction.y;
         this.opacity = 255;
+        this.size = this.fSize;
+
+        if(this.stopMoving){
+            this.moving = false;
+        } else {
+            this.moving = true;
+        }
     }
 
+}
+
+var blackHole = function(posX, posY){
+    this.position = createVector(posX, posY);
+    this.speed = 2;
+
+    this.drawBlackHole = function(){        
+        fill(0,0,0, 50);
+        ellipse(this.position.x, this.position.y, 400, 400);
+        fill(255, 255, 0, 20);
+        ellipse(this.position.x, this.position.y, 250, 250);
+        fill(255, 255, 0, 20);
+        ellipse(this.position.x, this.position.y, 235, 235);
+        fill(255, 255, 0);
+        ellipse(this.position.x, this.position.y, 210, 210);
+        fill(0,0,0);
+        ellipse(this.position.x, this.position.y, 200, 200);
+
+        // drag everything towards it
+        for(var i = 0; i < planets.length; i++){
+            if(dist(planets[i].position.x, planets[i].position.y, this.position.x, this.position.y) < 300){
+                if(planets[i].position.x < this.position.x){
+                    planets[i].position.x++;
+                } else {
+                    planets[i].position.x--;
+                }
+                if(planets[i].position.y < this.position.y){
+                    planets[i].position.y++;
+                } else {
+                    planets[i].position.y--;
+                }
+            }
+            if(dist(planets[i].position.x, planets[i].position.y, this.position.x, this.position.y) < 50){
+                if(planets[i].size > 0){
+                    planets[i].size--;
+                } else {
+                    planets.splice(planets[i].id, 1);
+                }
+            }
+        }
+
+        // move it
+    }
+}
+
+var earth = function(posX, posY){
+    this.position = createVector(posX, posY);
+
+    this.drawEarth = function(){
+        fill(0, 50, 255);
+        ellipse(this.position.x, this.position.y, 400, 400);
+    }
 }
