@@ -1,11 +1,18 @@
 // Space Game
 
+var gameState;
+
+// menu
+var mainMenu;
+var earthObjects;
+
 // global variables
 
 var player;
 var planets;
 var backgroundLayer_1;
 var backgroundLayer_2;
+var backgroundLayer_3;
 
 var particles_rocket_main;
 var particles_rocket_left;
@@ -21,6 +28,14 @@ var setup = function(){
     background(20,20,20);
     rectMode(CENTER);
 
+    gameState = 0;
+    mainMenu = new mainMenu();
+
+    earthObjects = [];
+    for(var i = 0; i < 100; i++){
+        earthObjects[i] = new earthObject(random(width / 2 - (height / 5 / 2), width / 2 + (height / 5 / 2)), random(height / 1.5 - (height / 5 / 2), height / 1.5 + (height / 5 / 2)));
+    }
+
     player = new rocketShip(width / 2, height / 2);
     planets = [];
     for(var i = 0; i < 3; i++){
@@ -29,10 +44,15 @@ var setup = function(){
 
     backgroundLayer_1 = [];
     backgroundLayer_2 = [];
+    backgroundLayer_3 = [];
 
     for(var i = 0; i < 300; i++){
         backgroundLayer_1[i] = new backgroundDetail(random(-width, width * 2), random(-height, height * 2), i);
         backgroundLayer_2[i] = new backgroundDetail(random(-width, width), random(-height, height), i);
+    }
+
+    for(var i = 0; i < 500; i++){
+        backgroundLayer_3[i] = new backgroundDetail(random(0, width), random(0, height), i);
     }
 
     particles_rocket_main = [];
@@ -42,50 +62,61 @@ var setup = function(){
     }
 
     blackHole = new blackHole(width / 2, height * 2);
-    earth = new earth(width / 2, height - 160);
+    earth = new earth(player.fPosition.x, player.fPosition.y);
 }
 
 // DRAW
 
 var draw = function(){
-    background(20,20,20);
+    if(gameState == 0){
+        background(20,20,20);
+        mainMenu.drawScreen();
+    }
+    if(gameState == 1){
+        background(20,20,20);
+        textSize(12);
 
-    // draw background
-    // back layer
-    for(var i = 0; i < backgroundLayer_2.length; i++){
+        for(var i = 0; i < backgroundLayer_3.length; i++){
+            backgroundLayer_3[i].drawDetail();
+        }
+
+        // draw background
+        // back layer
+        for(var i = 0; i < backgroundLayer_2.length; i++){
+            push();
+            translate(player.position.x * (0.6 - i / backgroundLayer_2.length) - width / 2, player.position.y * (0.6 - i / backgroundLayer_2.length) - height / 2);
+            backgroundLayer_2[i].drawDetail();
+            pop();
+        }
+
+        // front layer
+        for(var i = 0; i < backgroundLayer_1.length; i++){
+            push();
+            //translate(player.position.x * (0.8 - i / backgroundLayer_1.length) - width / 2, player.position.y * (0.8 - i / backgroundLayer_1.length) - height / 2);
+            translate(player.position.x * 0.8 - width / 2, player.position.y * 0.8 - height / 2);
+            backgroundLayer_1[i].drawDetail();
+            pop();
+        }
         push();
-        translate(player.position.x * (0.6 - i / backgroundLayer_2.length) - width / 2, player.position.y * (0.6 - i / backgroundLayer_2.length) - height / 2);
-        backgroundLayer_2[i].drawDetail();
+        translate(player.position.x - width / 2, player.position.y - height / 2);
+
+        // draw planets
+        for(var i = 0; i < planets.length; i++){
+            planets[i].drawPlanet();
+        }
+
+        noStroke();
+
+        // draw earth
+        earth.drawEarth();
+
+        // draw black hole
+        blackHole.drawBlackHole();
         pop();
+
+        // draw player
+        player.drawRocketShip();
     }
-
-    // front layer
-    for(var i = 0; i < backgroundLayer_1.length; i++){
-        push();
-        //translate(player.position.x * (0.8 - i / backgroundLayer_1.length) - width / 2, player.position.y * (0.8 - i / backgroundLayer_1.length) - height / 2);
-        translate(player.position.x * 0.8 - width / 2, player.position.y * 0.8 - height / 2);
-        backgroundLayer_1[i].drawDetail();
-        pop();
-    }
-    push();
-    translate(player.position.x - width / 2, player.position.y - height / 2);
-
-    // draw planets
-    for(var i = 0; i < planets.length; i++){
-        planets[i].drawPlanet();
-    }
-
-    noStroke();
-
-    // draw earth
-    earth.drawEarth();
-
-    // draw black hole
-    blackHole.drawBlackHole();
-    pop();
-
-    // draw player
-    player.drawRocketShip();
 }
 
 var planet = function(posX, posY, size){
@@ -245,6 +276,7 @@ var rocketShip = function(posX, posY){
         text("--------", 20, 180);
         text("Position X: " + (this.position.x - width / 2), 20, 200);
         text("Position Y: " + (this.position.y - height / 2), 20, 220);
+        text("FPS: " + round(frameRate()), 20, 240);
 
         // APPLY FORCE ON SHIP
         // this.position.add(this.force * this.position.heading());
@@ -346,11 +378,13 @@ var backgroundDetail = function(posX, posY, index){
     this.g = 200;
     this.b = 0;
     this.size = random(0, 5);
+    this.opacity = 255;
+    this.index = index;
 
     this.drawDetail = function(){
         // fill(this.r, this.g, this.b);        
-        noStroke();
-        fill(this.r, this.g, this.b);
+        noStroke();               
+        fill(this.r, this.g, this.b, this.opacity);
         ellipse(this.position.x, this.position.y, this.size, this.size);
     }
 }
@@ -421,6 +455,7 @@ var particle = function(parent, posX, posY, r, g, b, dirX, dirY, decaySpeed, siz
 var blackHole = function(posX, posY){
     this.position = createVector(posX, posY);
     this.speed = 0.5;
+    this.size = width / 1.2;
 
     this.drawBlackHole = function(){
         for(var i = 10; i > 0; i--){
@@ -480,10 +515,101 @@ var blackHole = function(posX, posY){
 }
 
 var earth = function(posX, posY){
-    this.position = createVector(posX, posY);
+    this.size = 400;
+    this.position = createVector(posX, posY + this.size / 2);
 
     this.drawEarth = function(){
         fill(0, 50, 255);
-        ellipse(this.position.x, this.position.y, 400, 400);
+        ellipse(this.position.x, this.position.y, this.size, this.size);
     }
+}
+
+// MENU
+
+var mainMenu = function(){
+    this.drawScreen = function(){
+        noStroke();
+        fill(10, 10, 10);
+        rect(width / 2, height / 2, width, height);
+        // window area
+        fill(20,20,20);
+        rect(width / 2, height / 5 + (height / 5 * 3) / 2, width, (height / 5) * 3);
+            // stars
+            for(var i = 0; i < backgroundLayer_3.length; i++){
+                backgroundLayer_3[i].drawDetail();
+            }
+            // earth
+            fill(0, 50, 255);
+            ellipse(width / 2, height / 1.5, height / 5, height / 5);
+            for(var i = 0; i < earthObjects.length; i++){
+                earthObjects[i].drawObject();
+            }
+            // black hole           
+            for(var i = 10; i > 0; i--){
+                fill(255, 200, 0, i);
+                ellipse(width / 2, 0, height *  1.2 + i * 30, height *  1.2 + i * 30);    
+            }            
+            fill(0,0,0);
+            ellipse(width / 2, 0, height, height); 
+            for(var i = 0; i < 20; i++){
+                var size = random(height * 1, height * 1.1);            
+                fill(0,0,0,0);
+                stroke(random(200, 255), random(200, 255), 0);
+                ellipse(width / 2, 0, size, size);
+            }
+            noStroke();
+        // top area
+        fill(10, 10, 10);
+        rect(width / 2, height / 5 / 2, width, height / 5);
+        // bottom area        
+        fill(10, 10, 10);
+        rect(width / 2, height - height / 5 / 2, width, height / 5);
+        // new game button
+        fill(0, 150, 0);
+        rect(width / 2, height - height / 5 / 2, width / 3, height / 8);
+        fill(0,0,0,0);
+        stroke(0, 255, 0);
+        rect(width / 2, height - height / 5 / 2, width / 4, height / 9);
+        noStroke();
+        fill(0, 255, 0);
+        textAlign(CENTER);
+        textSize(height / 25);
+        textFont('RALEWAY');
+        text("NEW GAME", width / 2, height - height / 5 / 2);
+        // bottom displays
+        fill(0, 150, 0);
+        ellipse(width / 5, height - height / 5 / 2, height / 8, height / 8);
+        // sides
+        fill(10,10,10);
+        rect(width / 9 / 2, height / 2, width / 9, height);        
+        rect(width - width / 9 / 2, height / 2, width / 9, height);
+    }
+}
+
+var earthObject = function(posX, posY){
+    this.position = createVector(posX, posY);
+    this.startPosition = createVector(posX, posY);
+    this.opacity = 255;
+    this.size = random(10, 15);
+    this.b = random(200, 255);
+    this.speed = random(1,2);
+
+    this.drawObject = function(){
+        fill(0, 50, this.b, this.opacity);
+        ellipse(this.position.x, this.position.y, this.size, this.size);
+        if(this.position.y > height / 4){
+            this.position.y-= this.speed;
+        } else {
+            this.position.y = this.startPosition.y;
+        }  
+        if(this.position.y > height / 1.5){
+            this.opacity = 0;
+        } else {
+            this.opacity = 255;
+        }
+    }
+}
+
+var mousePressed = function(){
+    gameState = 1;
 }
