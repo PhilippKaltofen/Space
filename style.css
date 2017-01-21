@@ -1,0 +1,79 @@
+/* Style sheet for description.html */
+
+body {
+	padding: 0; 
+	margin: 0; 
+	background: #fafafa; 
+	color: white; 
+	font-family: 'Open Sans';
+} 
+
+a {
+	color: rgb(250, 200, 0);
+	text-decoration: none;
+}
+	  		
+canvas {
+	position:absolute; 
+	left: 0; 
+	top: 0; 
+	z-index: -1;
+} 
+
+.outer {
+	display: table;
+	height: 100%;
+	width: 100%;
+}
+
+.middle {
+	display: table-cell;
+	vertical-align: middle;
+}
+
+.content { 
+  	color: #fff; 
+  	margin-left: auto;
+  	margin-right: auto;
+  	width: 80%;
+  	max-width: 800px;
+  	background: rgba(0,0,0, 0.5);
+  	border: 5px solid rgb(250, 200, 0);
+  	border-radius: 2px;
+}
+
+.game_title {
+	font-size: 4em;
+	text-align: center;
+	font-family: 'Raleway';
+}
+
+.desc_area {
+	margin: 0px 5%;
+	padding: 25px;
+	border-bottom: 2px solid rgb(250, 200, 0);
+}
+
+.no_border {
+	border: 0;
+}
+
+.call_to_action {
+	height: 50px;
+	line-height: 50px;
+	text-align: center;
+	margin-top: 25px;
+	background: rgb(250, 200, 0);
+	color: white;
+	font-weight: 800;
+	font-size: 1.5em;
+	transition: all 0.2s ease-out;
+}
+
+.call_to_action:hover {
+	font-size: 2em;
+}
+
+.canvas_space {
+	height: 100%;
+}

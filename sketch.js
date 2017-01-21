@@ -27,6 +27,7 @@ var setup = function(){
     createCanvas(windowWidth, windowHeight);
     background(20,20,20);
     rectMode(CENTER);
+    frameRate(60);
 
     gameState = 0;
     mainMenu = new mainMenu();
@@ -51,7 +52,7 @@ var setup = function(){
         backgroundLayer_2[i] = new backgroundDetail(random(-width, width), random(-height, height), i);
     }
 
-    for(var i = 0; i < 500; i++){
+    for(var i = 0; i < 100; i++){
         backgroundLayer_3[i] = new backgroundDetail(random(0, width), random(0, height), i);
     }
 
@@ -175,6 +176,7 @@ var planet = function(posX, posY, size){
         stroke(255);
         strokeWeight(2);
 
+        // collision with player
         if(player.nearestPlanet == this){
             this.color = color(255,255,255);
             if(player.nearestPlanetDistance < this.size / 2 && this.crashed == false){
@@ -262,8 +264,6 @@ var rocketShip = function(posX, posY){
         var dx = (this.nearestPlanet.position.x - this.position.x);
         var dy = (this.nearestPlanet.position.y - this.position.y);
 
-        //this.force.add(1 * (this.nearestPlanet.position.x - this.position.x) / this.nearestPlanetDistance ^ 2, 1 * (this.nearestPlanet.position.y - this.position.y) / this.nearestPlanetDistance ^ 2);
-
         textAlign(LEFT);
         fill(255);
         text("Magnitude: " + this.position.mag(), 20, 40);
@@ -277,26 +277,6 @@ var rocketShip = function(posX, posY){
         text("Position X: " + (this.position.x - width / 2), 20, 200);
         text("Position Y: " + (this.position.y - height / 2), 20, 220);
         text("FPS: " + round(frameRate()), 20, 240);
-
-        // APPLY FORCE ON SHIP
-        // this.position.add(this.force * this.position.heading());
-
-        /*
-        if(this.rotation > 90 && this.rotation < 260){
-            this.position.y -= this.force;
-        } else {
-            this.position.y += this.force;
-        }
-        // left
-        if(this.rotation > 180){
-            this.position.x += this.force * 1;
-        } else
-        // right
-        if(this.rotation < 180 && this.rotation > 0){
-            this.position.x += this.force * -1;
-        }
-        */
-
         
         if(this.rotation > -90 && this.rotation < 0){
             this.direction.x = this.rotation / 90;
@@ -318,6 +298,13 @@ var rocketShip = function(posX, posY){
             this.direction.y = 1 + (this.rotation / 90);
         }
 
+        // let gravity of planets affect player
+        if(this.nearestPlanetDistance < 200){
+            var gravityFromPlanet = -this.nearestPlanetDistance / 100;
+            this.position.x -= this.direction.x * gravityFromPlanet;
+            this.position.y += this.direction.y * gravityFromPlanet;
+        }
+
         this.position.x -= this.direction.x * this.force;
         this.position.y += this.direction.y * this.force;
         
@@ -330,6 +317,7 @@ var rocketShip = function(posX, posY){
         // INPUT
 
         if(keyIsDown(87)){
+            // speeding up with "W"
             if(this.force <= this.maxForce){
                 this.force += 0.1;
             }
@@ -339,11 +327,13 @@ var rocketShip = function(posX, posY){
                 }
             }
         } else
-        if(keyIsDown(83)){
+        if(keyIsDown(83) && this.force > -15){
+            // Input "S" --> lower force
             this.force -= 0.1;
         }
 
         if(this.force > 1){
+            // force decay over time
             this.force -= 0.02;
         }
 
@@ -386,6 +376,11 @@ var backgroundDetail = function(posX, posY, index){
         noStroke();               
         fill(this.r, this.g, this.b, this.opacity);
         ellipse(this.position.x, this.position.y, this.size, this.size);
+
+        if(dist(width / 2 - (player.position.x - width / 2), height / 2 - (player.position.y - height / 2), this.position.x, this.position.y) < 50){
+            stroke(250, 200, 0);
+            line(this.position.x, this.position.y, width / 2, height / 2);
+        }
     }
 }
 
@@ -454,7 +449,7 @@ var particle = function(parent, posX, posY, r, g, b, dirX, dirY, decaySpeed, siz
 
 var blackHole = function(posX, posY){
     this.position = createVector(posX, posY);
-    this.speed = 0.5;
+    this.speed = 1.5;
     this.size = width / 1.2;
 
     this.drawBlackHole = function(){
